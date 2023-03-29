@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"github.com/apache/thrift/lib/go/thrift"
 	"os"
+	"strings"
+
 	// hbase模块通过 thrift --gen go hbase.thrift 来生成
 	"ali-hbase-demo/gen-go/hbase"
 )
@@ -14,7 +17,7 @@ var (
 	HOST     = os.Getenv("HOST")
 	USER     = os.Getenv("USER")
 	PASSWORD = os.Getenv("PASSWORD")
-	FILE     = "./case.txt"
+	FILE     = "./case-1.txt" // example: key,values
 )
 
 func main() {
@@ -27,6 +30,41 @@ func main() {
 		fmt.Println(err)
 	}
 	client.get("test", "1")
+
+	f, err := os.Open(FILE)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer f.Close()
+	standardDate := make(map[string]string, 700)
+	var rows []string
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		res := strings.Split(line, ",")
+		if len(res) != 2 {
+			fmt.Println("line format error")
+		}
+		standardDate[res[0]] = res[1]
+		rows = append(rows, res[0])
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Println(err)
+		return
+	}
+	err, data := client.getMultiple("sha256", rows)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	for k, v := range data {
+		if v != standardDate[k] {
+			fmt.Println("error")
+			fmt.Println("[Mismatch]", k, v, standardDate[k])
+		}
+		fmt.Println("[ok]", k)
+	}
 
 }
 
@@ -116,7 +154,8 @@ func (h *habseClient) get(tableName string, row string) {
 }
 
 // 批量单行查询数据
-func (h *habseClient) getMultiple(tableName string, rows []string) (err error) {
+func (h *habseClient) getMultiple(tableName string, rows []string) (err error, data map[string]string) {
+	data = make(map[string]string, 700)
 	tableInbytes := []byte(tableName)
 	var gets []*hbase.TGet
 	for _, row := range rows {
@@ -125,20 +164,19 @@ func (h *habseClient) getMultiple(tableName string, rows []string) (err error) {
 	results, err := h.client.GetMultiple(context.Background(), tableInbytes, gets)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error GetMultiple:", err)
-		return err
+		return err, nil
 	}
 	for _, result := range results {
 		if result.Row == nil {
 			err = errors.New("error GetMultiple: row is nil")
 			fmt.Fprintln(os.Stderr, err)
-			return err
+			return err, nil
 		}
 		k := string(result.Row)
 		v := string(result.ColumnValues[0].Value)
-		fmt.Println(k)
-		fmt.Println(v)
+		data[k] = v
 	}
-	return nil
+	return nil, data
 }
 
 // 插入数据
