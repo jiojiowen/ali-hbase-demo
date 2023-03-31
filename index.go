@@ -68,7 +68,6 @@ func main() {
 
 }
 
-//范围扫描
 func (h *habseClient) scan(tableName string, startRow string, stopRow string) (err error) {
 	tableInbytes := []byte(tableName)
 	scan := &hbase.TScan{StartRow: []byte(startRow), StopRow: []byte(stopRow)}
@@ -98,8 +97,8 @@ func (h *habseClient) scan(tableName string, startRow string, stopRow string) (e
 	return nil
 }
 
-// 此函数可以找到比当前row大的最小row，方法是在当前row后加入一个0x00的byte
-// 从比当前row大的最小row开始scan，可以保证中间不会漏扫描数据
+//This function can find the smallest row greater than the current row by adding a 0x00 byte after the current row.
+//By starting the scan from the smallest row greater than the current row, it ensures that no data will be missed in the middle.
 func createClosestRowAfter(row []byte) []byte {
 	var nextRow []byte
 	var i int
@@ -135,7 +134,7 @@ func (h *habseClient) createTable(tableName string) (err error) {
 	return nil
 }
 
-// 单行查询数据
+// get
 func (h *habseClient) get(tableName string, row string) {
 	tableInbytes := []byte(tableName)
 
@@ -153,7 +152,7 @@ func (h *habseClient) get(tableName string, row string) {
 	fmt.Println(v)
 }
 
-// 批量单行查询数据
+// getMultiple
 func (h *habseClient) getMultiple(tableName string, rows []string) (err error, data map[string]string) {
 	data = make(map[string]string, 700)
 	tableInbytes := []byte(tableName)
@@ -179,7 +178,7 @@ func (h *habseClient) getMultiple(tableName string, rows []string) (err error, d
 	return nil, data
 }
 
-// 插入数据
+// insert
 func (h *habseClient) put(tableName string, row string, value string) (err error) {
 	tableInbytes := []byte(tableName)
 	err = h.client.Put(context.Background(), tableInbytes, &hbase.TPut{Row: []byte(row), ColumnValues: []*hbase.TColumnValue{&hbase.TColumnValue{
@@ -193,7 +192,7 @@ func (h *habseClient) put(tableName string, row string, value string) (err error
 	return nil
 }
 
-// 批量插入数据
+// Multiple insert
 func (h *habseClient) putMultiple(tableName string, data map[string]string) (err error) {
 	tableInbytes := []byte(tableName)
 	var puts []*hbase.TPut
@@ -222,7 +221,6 @@ func createHbaseClient(ns string) (err error, client *habseClient) {
 		fmt.Fprintln(os.Stderr, "error resolving address:", err)
 		return err, nil
 	}
-	// 设置用户名密码
 	httClient := trans.(*thrift.THttpClient)
 	httClient.SetHeader("ACCESSKEYID", USER)
 	httClient.SetHeader("ACCESSSIGNATURE", PASSWORD)

@@ -4,11 +4,11 @@
 package main
 
 import (
+	"ali-hbase-demo/gen-go/hbase"
 	"context"
 	"flag"
 	"fmt"
 	"github.com/apache/thrift/lib/go/thrift"
-	"hbase"
 	"math"
 	"net"
 	"net/url"

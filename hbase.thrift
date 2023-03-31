@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-// NOTE: The "required" and "optional" keywords for the service methods are purely for documentation
+// NOTE: The "required" and "optional" keywords for the service methods are purely for documentation.
 
 namespace java com.alibaba.hbase.thrift2.generated
 namespace cpp com.alibaba.hbase.thrift2
